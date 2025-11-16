@@ -1,0 +1,108 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  role      UserRole @default(STUDENT)
+  nim       String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  documentSubmissions DocumentSubmission[]
+  notifications      Notification[]
+
+  @@map("users")
+}
+
+model DocumentType {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  requirements String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  documentSubmissions DocumentSubmission[]
+
+  @@map("document_types")
+}
+
+model DocumentSubmission {
+  id              String            @id @default(cuid())
+  trackingCode    String            @unique
+  title           String
+  purpose         String
+  studentName     String
+  studentNim      String
+  studentEmail    String
+  studentPhone    String?
+  fileUrl         String?
+  notes           String?
+  status          DocumentStatus    @default(SUBMITTED)
+  rejectionReason String?
+  processedBy     String?
+  processedAt     DateTime?
+  completedAt     DateTime?
+  userId          String
+  documentTypeId  String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Relations
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documentType DocumentType @relation(fields: [documentTypeId], references: [id], onDelete: Cascade)
+  notifications Notification[]
+
+  @@map("document_submissions")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  title     String
+  message   String
+  type      NotificationType @default(INFO)
+  isRead    Boolean          @default(false)
+  userId    String
+  submissionId String?
+  createdAt DateTime         @default(now())
+
+  // Relations
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  submission DocumentSubmission? @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+enum UserRole {
+  STUDENT
+  ADMIN
+}
+
+enum DocumentStatus {
+  SUBMITTED
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+}
